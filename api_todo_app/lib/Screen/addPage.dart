@@ -1,7 +1,6 @@
-import 'dart:convert';
-
+import 'package:api_todo_app/Services/api_services.dart';
+import 'package:api_todo_app/utils/snackBar_helper.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 class AddPage extends StatefulWidget {
   final Map? todo;
@@ -36,20 +35,20 @@ class _AddPageState extends State<AddPage> {
         title: Text(isEdit ? "Edit Page" : "Add Todo Details"),
       ),
       body: ListView(
-        padding: EdgeInsets.all(8),
+        padding: const EdgeInsets.all(8),
         children: [
           TextField(
             controller: titleController,
-            decoration: InputDecoration(hintText: "title"),
+            decoration: const InputDecoration(hintText: "title"),
           ),
           TextField(
             controller: descripationController,
             keyboardType: TextInputType.multiline,
             minLines: 5,
             maxLines: 8,
-            decoration: InputDecoration(hintText: "Description"),
+            decoration: const InputDecoration(hintText: "Description"),
           ),
-          SizedBox(
+          const SizedBox(
             height: 20,
           ),
           ElevatedButton(
@@ -63,13 +62,6 @@ class _AddPageState extends State<AddPage> {
     );
   }
 
-  void showSuccessMessage(String mgs) {
-    final snackBar = SnackBar(
-      content: Text(mgs),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
-
   Future<void> submitButton() async {
     final title = titleController.text;
     final description = descripationController.text;
@@ -79,21 +71,15 @@ class _AddPageState extends State<AddPage> {
       "description": description,
       "is_completed": true
     };
-    final url = "https://api.nstack.in/v1/todos";
 
-    final uri = Uri.parse(url);
-    final respone = await http.post(
-      uri,
-      body: jsonEncode(body),
-      headers: {'Content-Type': 'application/json'},
-    );
+    final isSucess = await TodoServices.addTodo(body);
 
-    if (respone.statusCode == 201) {
+    if (isSucess) {
       titleController.text = '';
       descripationController.text = '';
-      showSuccessMessage("Success");
+      show();
     } else {
-      showSuccessMessage("Not valid");
+      showError();
     }
   }
 
@@ -111,18 +97,20 @@ class _AddPageState extends State<AddPage> {
       "description": description,
       "is_completed": false
     };
-    final url = 'https://api.nstack.in/v1/todos/$id';
+    final isSucess = await TodoServices.updateTodo(id, body);
 
-    final uri = Uri.parse(url);
-    final response = await http.put(
-      uri,
-      body: jsonEncode(body),
-      headers: {'Content-Type': 'application/json'},
-    );
-    if (response.statusCode == 200) {
-      showSuccessMessage("Success");
+    if (isSucess) {
+      show();
     } else {
-      showSuccessMessage("Not valid");
+      showError();
     }
+  }
+
+  void show() {
+    showSuccessMessage(context, mgs: "Success");
+  }
+
+  void showError() {
+    showSuccessMessage(context, mgs: "Not valid");
   }
 }

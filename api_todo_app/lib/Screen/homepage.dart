@@ -1,8 +1,8 @@
-import 'dart:convert';
-
 import 'package:api_todo_app/Screen/addPage.dart';
+import 'package:api_todo_app/Services/api_services.dart';
+import 'package:api_todo_app/utils/snackBar_helper.dart';
+import 'package:api_todo_app/widget/todo_card.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,7 +24,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Todo REST API"),
+        title: const Text("Todo REST API"),
         centerTitle: true,
       ),
       body: Visibility(
@@ -32,38 +32,25 @@ class _HomePageState extends State<HomePage> {
         child: Center(child: CircularProgressIndicator()),
         replacement: RefreshIndicator(
           onRefresh: fetchTodo,
-          child: ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final id = item['_id'];
-              return ListTile(
-                leading: CircleAvatar(child: Text("${index + 1}")),
-                title: Text(item['title']),
-                subtitle: Text(item['description']),
-                trailing: PopupMenuButton(
-                  onSelected: (value) {
-                    if (value == "Edit") {
-                      navigatorToEdit(item);
-                    } else if (value == "Delete") {
-                      delteteById(id);
-                    }
-                  },
-                  itemBuilder: (context) {
-                    return [
-                      PopupMenuItem(
-                        child: Text("Edit"),
-                        value: "Edit",
-                      ),
-                      PopupMenuItem(
-                        child: Text("Delete"),
-                        value: "Delete",
-                      ),
-                    ];
-                  },
-                ),
-              );
-            },
+          child: Visibility(
+            visible: items.isNotEmpty,
+            replacement: const Center(
+              child: Text("No data"),
+            ),
+            child: ListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+
+                return TodoCard(
+                  index: index,
+                  item: item,
+                  navigationEdit: navigatorToEdit,
+                  deleteById: deleteById,
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -71,35 +58,24 @@ class _HomePageState extends State<HomePage> {
         onPressed: () {
           navigatorToAdd();
         },
-        label: Text("Add"),
+        label: const Text("Add"),
       ),
     );
   }
 
   Future<void> fetchTodo() async {
-    final url = 'https://api.nstack.in/v1/todos?page=1&limit=10';
-    final uri = Uri.parse(url);
-    final response = await http.get(uri);
+    final response = await TodoServices.fetchTodo();
 
-    if (response.statusCode == 200) {
-      final json = jsonDecode(response.body) as Map;
-      final result = json['items'] as List;
+    if (response != null) {
       setState(() {
-        items = result;
+        items = response;
       });
     } else {
-      showSuccessMessage("Not loading");
+      showSuccessMessage(context, mgs: "something went wrong");
     }
     setState(() {
       isloading = false;
     });
-  }
-
-  void showSuccessMessage(String mgs) {
-    final snackBar = SnackBar(
-      content: Text(mgs),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   Future<void> navigatorToEdit(Map item) async {
@@ -126,19 +102,15 @@ class _HomePageState extends State<HomePage> {
     fetchTodo();
   }
 
-  Future<void> delteteById(String id) async {
-    final url = 'https://api.nstack.in/v1/todos/$id';
-    final uri = Uri.parse(url);
-    final response = await http.delete(uri);
-
-    if (response.statusCode == 200) {
-      showSuccessMessage("delete");
-      final filtterd = items.where((element) => element['_id'] != id).toList();
+  Future<void> deleteById(String id) async {
+    final isSuccess = await TodoServices.deleteById(id);
+    if (isSuccess) {
+      final filltered = items.where((element) => element['_id'] != id).toList();
       setState(() {
-        items = filtterd;
+        items = filltered;
       });
     } else {
-      showSuccessMessage("Not deleted");
+      showSuccessMessage(context, mgs: "Not deleted");
     }
   }
 }
