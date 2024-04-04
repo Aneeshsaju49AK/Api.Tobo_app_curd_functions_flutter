@@ -44,6 +44,7 @@ class _HomePageState extends State<HomePage> {
                 trailing: PopupMenuButton(
                   onSelected: (value) {
                     if (value == "Edit") {
+                      navigatorToEdit(item);
                     } else if (value == "Delete") {
                       delteteById(id);
                     }
@@ -101,12 +102,28 @@ class _HomePageState extends State<HomePage> {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  void navigatorToAdd() {
+  Future<void> navigatorToEdit(Map item) async {
+    final route = MaterialPageRoute(
+      builder: (context) => AddPage(todo: item),
+    );
+
+    await Navigator.push(context, route);
+    setState(() {
+      isloading = true;
+    });
+    fetchTodo();
+  }
+
+  Future<void> navigatorToAdd() async {
     final route = MaterialPageRoute(
       builder: (context) => AddPage(),
     );
 
-    Navigator.push(context, route);
+    await Navigator.push(context, route);
+    setState(() {
+      isloading = true;
+    });
+    fetchTodo();
   }
 
   Future<void> delteteById(String id) async {

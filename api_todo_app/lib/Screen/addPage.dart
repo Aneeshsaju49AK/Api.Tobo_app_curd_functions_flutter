@@ -4,20 +4,36 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 class AddPage extends StatefulWidget {
-  const AddPage({super.key});
+  final Map? todo;
+  const AddPage({this.todo, super.key});
 
   @override
   State<AddPage> createState() => _AddPageState();
 }
 
 class _AddPageState extends State<AddPage> {
+  bool isEdit = false;
+
+  @override
+  void initState() {
+    final todo = widget.todo;
+    if (todo != null) {
+      isEdit = true;
+      final title = todo['title'];
+      final descripation = todo['description'];
+      titleController.text = title;
+      descripationController.text = descripation;
+    }
+    super.initState();
+  }
+
   TextEditingController titleController = TextEditingController();
   TextEditingController descripationController = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Add Todo Details"),
+        title: Text(isEdit ? "Edit Page" : "Add Todo Details"),
       ),
       body: ListView(
         padding: EdgeInsets.all(8),
@@ -38,9 +54,9 @@ class _AddPageState extends State<AddPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              submitButton();
+              isEdit ? updateData() : submitButton();
             },
-            child: Text("Add"),
+            child: Text(isEdit ? "Edit" : "Add"),
           ),
         ],
       ),
@@ -75,6 +91,35 @@ class _AddPageState extends State<AddPage> {
     if (respone.statusCode == 201) {
       titleController.text = '';
       descripationController.text = '';
+      showSuccessMessage("Success");
+    } else {
+      showSuccessMessage("Not valid");
+    }
+  }
+
+  Future<void> updateData() async {
+    final todo = widget.todo;
+    if (todo == null) {
+      print("you can not call updated");
+      return;
+    }
+    final id = todo['_id'];
+    final title = titleController.text;
+    final description = descripationController.text;
+    final body = {
+      "title": title,
+      "description": description,
+      "is_completed": false
+    };
+    final url = 'https://api.nstack.in/v1/todos/$id';
+
+    final uri = Uri.parse(url);
+    final response = await http.put(
+      uri,
+      body: jsonEncode(body),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
       showSuccessMessage("Success");
     } else {
       showSuccessMessage("Not valid");
