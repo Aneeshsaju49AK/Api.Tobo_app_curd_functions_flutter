@@ -36,10 +36,31 @@ class _HomePageState extends State<HomePage> {
             itemCount: items.length,
             itemBuilder: (context, index) {
               final item = items[index];
+              final id = item['_id'];
               return ListTile(
-                leading: Text("${index + 1}"),
+                leading: CircleAvatar(child: Text("${index + 1}")),
                 title: Text(item['title']),
                 subtitle: Text(item['description']),
+                trailing: PopupMenuButton(
+                  onSelected: (value) {
+                    if (value == "Edit") {
+                    } else if (value == "Delete") {
+                      delteteById(id);
+                    }
+                  },
+                  itemBuilder: (context) {
+                    return [
+                      PopupMenuItem(
+                        child: Text("Edit"),
+                        value: "Edit",
+                      ),
+                      PopupMenuItem(
+                        child: Text("Delete"),
+                        value: "Delete",
+                      ),
+                    ];
+                  },
+                ),
               );
             },
           ),
@@ -86,5 +107,21 @@ class _HomePageState extends State<HomePage> {
     );
 
     Navigator.push(context, route);
+  }
+
+  Future<void> delteteById(String id) async {
+    final url = 'https://api.nstack.in/v1/todos/$id';
+    final uri = Uri.parse(url);
+    final response = await http.delete(uri);
+
+    if (response.statusCode == 200) {
+      showSuccessMessage("delete");
+      final filtterd = items.where((element) => element['_id'] != id).toList();
+      setState(() {
+        items = filtterd;
+      });
+    } else {
+      showSuccessMessage("Not deleted");
+    }
   }
 }
