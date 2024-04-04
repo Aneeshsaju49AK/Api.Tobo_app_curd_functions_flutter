@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -35,7 +37,9 @@ class _AddPageState extends State<AddPage> {
             height: 20,
           ),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              submitButton();
+            },
             child: Text("Add"),
           ),
         ],
@@ -43,13 +47,37 @@ class _AddPageState extends State<AddPage> {
     );
   }
 
+  void showSuccessMessage(String mgs) {
+    final snackBar = SnackBar(
+      content: Text(mgs),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
   Future<void> submitButton() async {
     final title = titleController.text;
     final description = descripationController.text;
 
-    final url = "https://api.nstack.in/v1/todos?page=1&limit=10";
+    final body = {
+      "title": title,
+      "description": description,
+      "is_completed": true
+    };
+    final url = "https://api.nstack.in/v1/todos";
 
     final uri = Uri.parse(url);
-    final respone = await http.post(uri);
+    final respone = await http.post(
+      uri,
+      body: jsonEncode(body),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    if (respone.statusCode == 201) {
+      titleController.text = '';
+      descripationController.text = '';
+      showSuccessMessage("Success");
+    } else {
+      showSuccessMessage("Not valid");
+    }
   }
 }
